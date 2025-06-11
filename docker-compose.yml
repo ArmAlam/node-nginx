@@ -1,6 +1,8 @@
 services:
   user-service-1:
     build: ./services/user-service
+    environment:
+      - CONTAINER_ID=container1
     ports:
       - "3001:3000"
     networks:
@@ -8,6 +10,8 @@ services:
 
   user-service-2:
     build: ./services/user-service
+    environment:
+      - CONTAINER_ID=container2
     ports:
       - "3002:3000"
     networks:

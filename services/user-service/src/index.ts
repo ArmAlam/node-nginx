@@ -1,15 +1,20 @@
 import express from "express";
 
 const app = express();
+
+app.use(express.json());
 const PORT = 3000;
 
+const containerId = process.env.CONTAINER_ID || "unknown";
+
 app.get("/users", (req, res) => {
-  res.json([
-    { id: 1, name: "Alice" },
-    { id: 2, name: "Bob" },
-  ]);
+  res.send({ msg: `Hello from User Service!`, containerId });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.post("/users", (req, res) => {
+  res.send({ ...req.body, ...req.headers });
+});
+
+app.listen(PORT, () => {
   console.log(`User service running on port ${PORT}`);
 });
