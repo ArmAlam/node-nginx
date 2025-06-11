@@ -1,7 +1,7 @@
 import express from "express";
 
 const app = express();
-const PORT = 3001;
+const PORT = 3000;
 
 app.get("/users", (req, res) => {
   res.json([
@@ -10,6 +10,6 @@ app.get("/users", (req, res) => {
   ]);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`User service running on port ${PORT}`);
 });

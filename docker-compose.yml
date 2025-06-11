@@ -1,17 +1,27 @@
 services:
-  user-service:
+  user-service-1:
     build: ./services/user-service
     ports:
-      - "3001:3001"
+      - "3001:3000"
+    networks:
+      - app-network
+
+  user-service-2:
+    build: ./services/user-service
+    ports:
+      - "3002:3000"
     networks:
       - app-network
 
   nginx:
-    build: ./nginx
+    image: nginx:alpine
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     ports:
       - "80:80"
     depends_on:
-      - user-service
+      - user-service-1
+      - user-service-2
     networks:
       - app-network
 
