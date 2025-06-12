@@ -15,6 +15,11 @@ app.post("/users", (req, res) => {
   res.send({ ...req.body, ...req.headers });
 });
 
-app.listen(PORT, () => {
-  console.log(`User service running on port ${PORT}`);
-});
+if (require.main === module) {
+  const PORT = 3000;
+  app.listen(PORT, () => {
+    console.log(`User service running on port ${PORT}`);
+  });
+}
+
+export default app;
