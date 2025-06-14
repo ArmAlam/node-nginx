@@ -47,6 +47,13 @@ services:
     networks:
       - app-network
 
+  go-worker:
+    build: ./services/go-worker
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
 networks:
   app-network:
     driver: bridge

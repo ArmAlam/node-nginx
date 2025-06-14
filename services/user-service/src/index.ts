@@ -22,7 +22,7 @@ const initRabbitMQ = async () => {
     try {
       const connection = await amqp.connect(RABBITMQ_URL);
       channel = await connection.createChannel();
-      await channel.assertQueue("tasks");
+      await channel.assertQueue("tasks", { durable: true });
       console.log("Connected to RabbitMQ");
       break; // Exit loop if connection is successful
     } catch (error) {
@@ -52,7 +52,9 @@ app.post("/users", (req, res) => {
   };
 
   if (channel) {
-    channel.sendToQueue("tasks", Buffer.from(JSON.stringify(task)));
+    channel.sendToQueue("tasks", Buffer.from(JSON.stringify(task)), {
+      persistent: true,
+    });
     console.log("Published task to RabbitMQ:", task);
     res.send({ msg: "Task published to RabbitMQ", task });
   } else {
