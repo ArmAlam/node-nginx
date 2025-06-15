@@ -45,6 +45,7 @@ async function consumeResults() {
     const conn = await amqp.connect(RABBITMQ_URL);
     const ch = await conn.createChannel();
     await ch.assertQueue("results", { durable: true });
+    await ch.prefetch(1); // Process one message at a time
 
     console.log("📡 Waiting for results...");
     ch.consume("results", (msg) => {
@@ -81,14 +82,19 @@ app.post("/users", (req, res) => {
   }
 });
 
-// START SERVER
-if (require.main === module) {
+const bootstrap = async () => {
+  await initRabbitMQ();
+  await consumeResults();
+
   const PORT = 3000;
   app.listen(PORT, async () => {
     console.log(`User service running on port ${PORT}`);
-    await initRabbitMQ();
-    await consumeResults();
   });
+};
+
+// START SERVER
+if (require.main === module) {
+  bootstrap();
 }
 
 export default app;
