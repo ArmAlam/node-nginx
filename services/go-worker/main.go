@@ -3,13 +3,21 @@ package main
 import (
 	"go-worker/consumer"
 	"go-worker/utils"
+	"os"
 )
 
 func main() {
-	utils.Init()
-	utils.InfoLogger.Println("Go Worker Service Started 🚀")
 
-	conn := utils.ConnectWithRetry("amqp://user:pass@rabbitmq:5672/", 10)
+	rabbitURL := os.Getenv("RABBITMQ_URL")
+	if rabbitURL == "" {
+		utils.InfoLogger.Fatalf("RABBITMQ_URL environment variable is required")
+	}
+	
+	utils.Init()
+	utils.InfoLogger.Println("Go Worker Service Started")
+
+	
+	conn := utils.ConnectWithRetry(rabbitURL, 10)
 	defer conn.Close()
 
 	ch, err := conn.Channel()
