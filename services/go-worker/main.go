@@ -18,7 +18,7 @@ type Task struct {
 type Result struct {
 	OriginalNumber int64 `json:"originalNumber"`
 	PrimeCount     int64 `json:"primeCount"`
-	ProcessedAt    int64 `json:"processedAt"`
+	ProcessedAt    string `json:"processedAt"`
 }
 
 func isPrime(n int64) bool {
@@ -74,11 +74,12 @@ func main() {
 		result := Result{
 			OriginalNumber: task.Number,
 			PrimeCount:     primeCount,
-			ProcessedAt:    time.Now().Unix(),
+			ProcessedAt:    time.Now().Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(result)
 
 		err = ch.Publish("", resultsQueue.Name, false, false, amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
 			ContentType: "application/json",
 			Body:        body,
 		})
@@ -104,7 +105,7 @@ func connectWithRetry(url string, maxRetries int, delay time.Duration) *amqp.Con
 			log.Printf("Connected to RabbitMQ on attempt %d\n", i)
 			return conn
 		}
-		log.Printf("⏳ Retry %d: %v", i, err)
+		log.Printf("Retry %d: %v", i, err)
 		time.Sleep(delay)
 	}
 	log.Fatalf("Failed to connect: %v", err)
