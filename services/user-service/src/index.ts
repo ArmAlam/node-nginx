@@ -40,13 +40,32 @@ const initRabbitMQ = async () => {
   }
 };
 
+async function consumeResults() {
+  try {
+    const conn = await amqp.connect(RABBITMQ_URL);
+    const ch = await conn.createChannel();
+    await ch.assertQueue("results", { durable: true });
+
+    console.log("📡 Waiting for results...");
+    ch.consume("results", (msg) => {
+      if (msg) {
+        const data = JSON.parse(msg.content.toString());
+        console.log("Result received from Go:", data);
+        ch.ack(msg);
+      }
+    });
+  } catch (err) {
+    console.error("Result consumer error:", err);
+  }
+}
+
 app.get("/users", (req, res) => {
   res.send({ msg: `Hello from User Service!`, containerId });
 });
 
 app.post("/users", (req, res) => {
   const task = {
-    user: req.body,
+    number: req.body.number,
     headers: req.headers,
     timestamp: Date.now(),
   };
@@ -68,6 +87,7 @@ if (require.main === module) {
   app.listen(PORT, async () => {
     console.log(`User service running on port ${PORT}`);
     await initRabbitMQ();
+    await consumeResults();
   });
 }
 

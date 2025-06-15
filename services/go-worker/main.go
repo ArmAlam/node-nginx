@@ -2,17 +2,90 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
+	"math"
 	"time"
 
 	"github.com/streadway/amqp"
 )
 
 type Task struct {
-	User      map[string]interface{} `json:"user"`
+	Number    int64                  `json:"number"`
 	Headers   map[string]interface{} `json:"headers"`
 	Timestamp int64                  `json:"timestamp"`
+}
+
+type Result struct {
+	OriginalNumber int64 `json:"originalNumber"`
+	PrimeCount     int64 `json:"primeCount"`
+	ProcessedAt    int64 `json:"processedAt"`
+}
+
+func isPrime(n int64) bool {
+	if n < 2 {
+		return false
+	}
+	sqrt := int64(math.Sqrt(float64(n)))
+	for i := int64(2); i <= sqrt; i++ {
+		if n%i == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func countPrimes(n int64, resultCh chan<- int64) {
+	var count int64 = 0
+	for i := int64(2); i <= n; i++ {
+		if isPrime(i) {
+			count++
+		}
+	}
+	resultCh <- count
+}
+
+func main() {
+	conn := connectWithRetry("amqp://user:pass@rabbitmq:5672/", 10, 3*time.Second)
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	failOnError(err, "Channel open error")
+	defer ch.Close()
+
+	tasksQueue, _ := ch.QueueDeclare("tasks", true, false, false, false, nil)
+	resultsQueue, _ := ch.QueueDeclare("results", true, false, false, false, nil)
+
+	msgs, err := ch.Consume(tasksQueue.Name, "go-worker", true, false, false, false, nil)
+	failOnError(err, "Consumer error")
+
+	log.Println("Waiting for tasks...")
+
+	for msg := range msgs {
+		var task Task
+		json.Unmarshal(msg.Body, &task)
+
+		log.Printf("Got number to process: %d\n", task.Number)
+
+		resultCh := make(chan int64)
+		go countPrimes(task.Number, resultCh)
+
+		primeCount := <-resultCh
+
+		result := Result{
+			OriginalNumber: task.Number,
+			PrimeCount:     primeCount,
+			ProcessedAt:    time.Now().Unix(),
+		}
+		body, _ := json.Marshal(result)
+
+		err = ch.Publish("", resultsQueue.Name, false, false, amqp.Publishing{
+			ContentType: "application/json",
+			Body:        body,
+		})
+		if err == nil {
+			log.Printf("Sent result for %d (primes: %d)", task.Number, primeCount)
+		}
+	}
 }
 
 func failOnError(err error, msg string) {
@@ -28,51 +101,12 @@ func connectWithRetry(url string, maxRetries int, delay time.Duration) *amqp.Con
 	for i := 1; i <= maxRetries; i++ {
 		conn, err = amqp.Dial(url)
 		if err == nil {
-			log.Printf("✅ Connected to RabbitMQ on attempt %d\n", i)
+			log.Printf("Connected to RabbitMQ on attempt %d\n", i)
 			return conn
 		}
-
-		log.Printf("⏳ Attempt %d: RabbitMQ not ready, retrying in %v... Error: %v\n", i, delay, err)
+		log.Printf("⏳ Retry %d: %v", i, err)
 		time.Sleep(delay)
 	}
-
-	log.Fatalf("Could not connect to RabbitMQ after %d attempts: %v", maxRetries, err)
+	log.Fatalf("Failed to connect: %v", err)
 	return nil
-}
-
-func main() {
-	rabbitURL := "amqp://user:pass@rabbitmq:5672/"
-	conn := connectWithRetry(rabbitURL, 10, 3*time.Second)
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare("tasks", true, false, false, false, nil)
-	failOnError(err, "Failed to declare a queue")
-
-	msgs, err := ch.Consume(
-		q.Name,
-		"go-worker", // consumer tag
-		true,        // auto-ack
-		false,
-		false,
-		false,
-		nil,
-	)
-	failOnError(err, "Failed to register a consumer")
-
-	log.Println("🚀 Waiting for messages...")
-
-	for d := range msgs {
-		var task Task
-		err := json.Unmarshal(d.Body, &task)
-		if err != nil {
-			log.Println("Error parsing task:", err)
-			continue
-		}
-
-		fmt.Printf("📥 Received task: %+v\n", task)
-	}
 }
