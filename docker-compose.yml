@@ -4,7 +4,9 @@ services:
     depends_on:
       - rabbitmq
     environment:
+      - PORT=3000
       - CONTAINER_ID=container1
+      - RABBITMQ_URL=amqp://user:pass@rabbitmq:5672/
     ports:
       - "3001:3000"
     networks:
@@ -15,7 +17,9 @@ services:
     depends_on:
       - rabbitmq
     environment:
+      - PORT=3000
       - CONTAINER_ID=container2
+      - RABBITMQ_URL=amqp://user:pass@rabbitmq:5672/
     ports:
       - "3002:3000"
     networks:
