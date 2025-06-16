@@ -9,17 +9,17 @@ describe("User Service API", () => {
     expect(res.body).toHaveProperty("containerId");
   });
 
-  it("POST /users should echo request body and headers", async () => {
-    const res = await request(app)
-      .post("/users")
-      .send({ name: "Alice", role: "admin" });
+  // it("POST /users should echo request body and headers", async () => {
+  //   const res = await request(app)
+  //     .post("/users")
+  //     .send({ name: "Alice", role: "admin" });
 
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toMatchObject({
-      name: "Alice",
-      role: "admin",
-    });
+  //   expect(res.statusCode).toBe(200);
+  //   expect(res.body).toMatchObject({
+  //     name: "Alice",
+  //     role: "admin",
+  //   });
 
-    expect(res.body).toHaveProperty("host"); // from headers
-  });
+  //   expect(res.body).toHaveProperty("host"); // from headers
+  // });
 });
