@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../index";
+import app from "../app";
 
 describe("User Service API", () => {
   it("GET /users should return greeting with containerId", async () => {
