@@ -12,9 +12,13 @@ export const consumeResults = async () => {
     console.log("📡 Waiting for results...");
     ch.consume("results", (msg) => {
       if (msg) {
-        const result = JSON.parse(msg.content.toString());
-        console.log("Received from Go:", result);
-        ch.ack(msg);
+        try {
+          const result = JSON.parse(msg.content.toString());
+          console.log("Received from Go:", result);
+          ch.ack(msg);
+        } catch (err) {
+          ch.nack(msg, false, false);
+        }
       }
     });
   } catch (err) {
