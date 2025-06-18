@@ -1,8 +1,8 @@
-import amqp from "amqplib";
+import amqp, { Channel } from "amqplib";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-let channel: amqp.Channel;
+let channel: Channel;
 
 export const initRabbitMQ = async () => {
   const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost";
@@ -26,6 +26,11 @@ export const initRabbitMQ = async () => {
       await sleep(5000);
     }
   }
+};
+
+export const closeRabbitMQ = async () => {
+  if (channel) await channel.close();
+  console.log("RabbitMQ connection closed.");
 };
 
 export const getChannel = () => channel;
