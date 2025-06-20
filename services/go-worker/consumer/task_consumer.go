@@ -13,11 +13,25 @@ import (
 )
 
 func StartConsuming(ch *amqp.Channel) {
-	tasksQueue, _ := ch.QueueDeclare("tasks", true, false, false, false, nil)
-	resultsQueue, _ := ch.QueueDeclare("results", true, false, false, false, nil)
+	tasksQueue, err := ch.QueueDeclare("tasks", true, false, false, false, nil)
+
+	if err != nil {
+		utils.FailOnError(err, "Failed to declare tasks queue")
+	}
+
+	resultsQueue, err := ch.QueueDeclare("results", true, false, false, false, nil)
+
+	if err != nil {
+		utils.FailOnError(err, "Failed to declare results queue")
+	
+	}
 
 	msgs, err := ch.Consume(tasksQueue.Name, "go-worker", true, false, false, false, nil)
-	utils.FailOnError(err, "Consumer error")
+	
+	if err != nil {
+		utils.FailOnError(err, "Consumer failed to register a consumer")
+	
+	}
 
 	log.Println("Waiting for tasks...")
 
